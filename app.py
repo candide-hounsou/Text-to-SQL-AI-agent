@@ -1,9 +1,19 @@
 import streamlit as st
 import pandas as pd
 import uuid
-from agent import create_graph
-from langchain_core.messages import HumanMessage
 import plotly.express as px
+
+try:
+    from agent import create_graph
+    from langchain_core.messages import HumanMessage
+except ModuleNotFoundError as exc:
+    st.set_page_config(page_title="Olist Data Agent", page_icon="🤖", layout="wide")
+    st.title("🤖 Olist Text-to-SQL Agent")
+    st.error(
+        f"Missing Python dependency: {exc.name}. Install the project requirements in the active virtual environment and rerun the app."
+    )
+    st.code("python -m pip install -r requirements.txt\nstreamlit run app.py", language="bash")
+    st.stop()
 
 st.set_page_config(page_title="Olist Data Agent", page_icon="🤖", layout="wide")
 st.title("🤖 Olist Text-to-SQL Agent")
