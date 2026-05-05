@@ -17,6 +17,20 @@ import time
 # 1. Load environment variables from the .env file (API keys)
 load_dotenv()
 
+
+def _require_openai_credentials() -> None:
+    """Fail fast with a clear message when OpenAI credentials are missing."""
+    if os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_ADMIN_KEY"):
+        return
+
+    raise RuntimeError(
+        "Missing OpenAI credentials. Set OPENAI_API_KEY in the project .env file "
+        "or export OPENAI_API_KEY before starting the app."
+    )
+
+
+_require_openai_credentials()
+
 # 2. Define the Agent's Memory
 class AgentState(TypedDict, total=False):
     """

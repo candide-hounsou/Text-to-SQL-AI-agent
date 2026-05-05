@@ -49,6 +49,8 @@ Create a `.env` file in the root directory and add your OpenAI API Key:
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
+The Streamlit app and evaluation dashboard both import the shared agent module, so the same `OPENAI_API_KEY` must be available whenever you launch either entrypoint.
+
 **5. Initialize the database**
 Before running the agent, you must build the SQLite database from the raw CSV files (assuming you have downloaded the Olist dataset into a `data/` folder).
 ```bash
