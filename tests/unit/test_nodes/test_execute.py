@@ -1,11 +1,22 @@
-"""Unit tests for the execute_sql security guardrail."""
+"""Unit tests for the execute_sql security guardrail and connector integration."""
 from unittest.mock import MagicMock, patch
 
 from src.agent.nodes.execute import execute_sql
+from src.connectors.base import DatabaseConnector
 
 
-def _config():
-    return {"configurable": {}}
+def _config(connector=None):
+    return {"configurable": {"connector": connector} if connector else {}}
+
+
+def _mock_connector(cols=None, rows=None):
+    """Return a mock DatabaseConnector with preset execute() return values."""
+    connector = MagicMock(spec=DatabaseConnector)
+    connector.execute.return_value = (
+        cols or ["customer_id", "customer_city", "customer_state"],
+        rows or [("c1", "sao paulo", "SP")],
+    )
+    return connector
 
 
 class TestSecurityGuardrail:
@@ -14,13 +25,8 @@ class TestSecurityGuardrail:
     def test_select_passes_through(self):
         """A valid SELECT query should reach the DB layer (mocked) without security error."""
         state = {"sql_query": "SELECT * FROM customers", "retry_count": 0}
-        mock_cursor = MagicMock()
-        mock_cursor.fetchmany.return_value = [("c1", "sao paulo", "SP")]
-        mock_cursor.description = [("customer_id",), ("customer_city",), ("customer_state",)]
-        mock_conn = MagicMock()
-        mock_conn.cursor.return_value = mock_cursor
-        with patch("src.agent.nodes.execute.sqlite3.connect", return_value=mock_conn):
-            result = execute_sql(state, _config())
+        connector = _mock_connector()
+        result = execute_sql(state, _config(connector))
         assert result.get("error") == ""
         assert result.get("raw_data") is not None
 
@@ -59,12 +65,16 @@ class TestSecurityGuardrail:
     def test_empty_query_attempts_db(self):
         """An empty query has no statements, so it skips the guardrail and hits the DB."""
         state = {"sql_query": "", "retry_count": 0}
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_cursor.fetchmany.return_value = []
-        mock_cursor.description = []
-        mock_conn.cursor.return_value = mock_cursor
-        with patch("src.agent.nodes.execute.sqlite3.connect", return_value=mock_conn):
-            # The behaviour after guardrail depends on sqlite3 — we just check no security error
-            result = execute_sql(state, _config())
+        connector = _mock_connector(cols=[], rows=[])
+        connector.execute.return_value = ([], [])
+        result = execute_sql(state, _config(connector))
         assert "Security Violation" not in result.get("error", "")
+
+    def test_connector_error_is_captured(self):
+        """Errors raised by the connector are caught and returned as error state."""
+        state = {"sql_query": "SELECT * FROM missing", "retry_count": 0}
+        connector = MagicMock(spec=DatabaseConnector)
+        connector.execute.side_effect = Exception("no such table: missing")
+        result = execute_sql(state, _config(connector))
+        assert "no such table: missing" in result["error"]
+        assert result["retry_count"] == 1

@@ -106,9 +106,9 @@ class TestGraphIntegration:
              patch("src.agent.nodes.classify.get_llm", return_value=classify_llm), \
              patch("src.agent.nodes.classify.get_schema", return_value="TABLE customers"), \
              patch("src.agent.nodes.generate.get_llm", return_value=generate_llm), \
-             patch("src.agent.nodes.generate.get_schema", return_value="TABLE customers"), \
+             patch("src.agent.nodes.generate.get_schema_for_query", return_value="TABLE customers"), \
              patch("src.agent.nodes.summarize.get_llm", return_value=summarize_llm), \
-             patch("src.agent.nodes.execute.sqlite3.connect", return_value=mock_conn):
+             patch("src.connectors.sqlite.sqlite3.connect", return_value=mock_conn):
             graph = create_graph()
             state = {
                 "query": "How many customers are there?",

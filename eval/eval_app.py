@@ -30,10 +30,24 @@ st.title("🧪 LLM Text-to-SQL Evaluation Dashboard")
 st.sidebar.header("⚙️ Experiment Settings")
 st.sidebar.markdown("Configure the ablation study parameters:")
 
+_PROVIDER_MODELS = {
+    "openai": ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"],
+    "anthropic": ["claude-3-5-haiku-20241022", "claude-sonnet-4-5"],
+    "gemini": ["gemini-2.0-flash", "gemini-2.5-pro"],
+}
+_PROVIDER_LABELS = {"OpenAI": "openai", "Anthropic": "anthropic", "Gemini": "gemini"}
+
+provider_label = st.sidebar.selectbox(
+    "LLM Provider",
+    options=list(_PROVIDER_LABELS.keys()),
+    help="Select the LLM provider for SQL generation.",
+)
+provider_choice = _PROVIDER_LABELS[provider_label]
+
 model_choice = st.sidebar.selectbox(
     "LLM Model",
-    options=["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"],
-    help="Select the model used for SQL generation."
+    options=_PROVIDER_MODELS[provider_choice],
+    help="Select the model used for SQL generation.",
 )
 
 use_few_shot = st.sidebar.toggle("Enable Few-Shot Prompting", value=True)
@@ -101,6 +115,7 @@ if st.button("🚀 Run Evaluation Benchmark", type="primary"):
         config = {
             "configurable": {
                 "thread_id": f"eval_thread_{item['id']}",
+                "provider": provider_choice,
                 "model_name": model_choice,
                 "use_few_shot": use_few_shot,
                 "use_self_correction": use_self_correction,
@@ -350,6 +365,7 @@ if st.button("🚀 Run Evaluation Benchmark", type="primary"):
     run_metadata = {
         "Run ID": str(uuid.uuid4())[:8],
         "Timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "Provider": provider_choice,
         "Model": model_choice,
         "Few-Shot": use_few_shot,
         "Self-Correction": use_self_correction,
