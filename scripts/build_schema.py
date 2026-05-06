@@ -1,13 +1,18 @@
 import sqlite3
+import sys
+import os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 
 def generate_enriched_schema(db_path="data/olist.db", output_path="data/schema.txt"):
     """
-    Connects to the SQLite database, extracts the schema, 
-    and automatically fetches sample values for text columns 
+    Connects to the SQLite database, extracts the schema,
+    and automatically fetches sample values for text columns
     to enrich the LLM prompt (Schema Linking).
     """
     print("⏳ Profiling database and generating enriched schema...")
-    
+
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
@@ -34,14 +39,16 @@ def generate_enriched_schema(db_path="data/olist.db", output_path="data/schema.t
             # If it's a TEXT column, we fetch up to 4 sample values for the LLM
             if col_type.upper() in ["TEXT", "VARCHAR"]:
                 try:
-                    cursor.execute(f"SELECT DISTINCT {col_name} FROM {table_name} WHERE {col_name} IS NOT NULL LIMIT 4;")
+                    cursor.execute(
+                        f"SELECT DISTINCT {col_name} FROM {table_name} "
+                        f"WHERE {col_name} IS NOT NULL LIMIT 4;"
+                    )
                     samples = [str(row[0]) for row in cursor.fetchall()]
                     if samples:
-                        # Format the samples like: 'val1', 'val2'
                         formatted_samples = ", ".join([f"'{s}'" for s in samples])
                         comment = f" -- Examples: {formatted_samples}"
                 except Exception:
-                    pass # Safely ignore if the sample query fails
+                    pass  # Safely ignore if the sample query fails
 
             col_lines.append(f"    {col_name} {col_type}{comment}")
 
@@ -55,6 +62,12 @@ def generate_enriched_schema(db_path="data/olist.db", output_path="data/schema.t
 
     print(f"✅ Enriched schema successfully generated in '{output_path}'.")
     conn.close()
+
+    # Build the RAG schema index for query-time schema linking
+    schema_text = "\n".join(schema_lines)
+    from src.schema.embedder import build_schema_index
+    build_schema_index(schema_text)
+
 
 if __name__ == "__main__":
     generate_enriched_schema()

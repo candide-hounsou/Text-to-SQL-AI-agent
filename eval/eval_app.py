@@ -8,14 +8,14 @@ import os
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
 sys.path.append(parent_dir)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from agent import create_graph
 from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
+from src.llm.factory import PROVIDER_MODELS, LLMProvider
 import uuid
 import time
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # --- Pydantic Model for the Judge ---
 class JudgeOutput(BaseModel):
@@ -30,10 +30,23 @@ st.title("🧪 LLM Text-to-SQL Evaluation Dashboard")
 st.sidebar.header("⚙️ Experiment Settings")
 st.sidebar.markdown("Configure the ablation study parameters:")
 
+_PROVIDER_LABELS = {
+    "OpenAI": LLMProvider.OPENAI,
+    "Anthropic": LLMProvider.ANTHROPIC,
+    "Gemini": LLMProvider.GEMINI,
+}
+
+provider_label = st.sidebar.selectbox(
+    "LLM Provider",
+    options=list(_PROVIDER_LABELS.keys()),
+    help="Select the LLM provider for SQL generation.",
+)
+provider_choice = _PROVIDER_LABELS[provider_label]
+
 model_choice = st.sidebar.selectbox(
     "LLM Model",
-    options=["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"],
-    help="Select the model used for SQL generation."
+    options=PROVIDER_MODELS[provider_choice],
+    help="Select the model used for SQL generation.",
 )
 
 use_few_shot = st.sidebar.toggle("Enable Few-Shot Prompting", value=True)
@@ -101,6 +114,7 @@ if st.button("🚀 Run Evaluation Benchmark", type="primary"):
         config = {
             "configurable": {
                 "thread_id": f"eval_thread_{item['id']}",
+                "provider": provider_choice,
                 "model_name": model_choice,
                 "use_few_shot": use_few_shot,
                 "use_self_correction": use_self_correction,
@@ -350,6 +364,7 @@ if st.button("🚀 Run Evaluation Benchmark", type="primary"):
     run_metadata = {
         "Run ID": str(uuid.uuid4())[:8],
         "Timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "Provider": provider_choice,
         "Model": model_choice,
         "Few-Shot": use_few_shot,
         "Self-Correction": use_self_correction,
