@@ -1,7 +1,12 @@
 """Unit tests for the execute_sql security guardrail and connector integration."""
+import sqlite3
+import threading
+import time
 from unittest.mock import MagicMock
 
-from src.agent.nodes.execute import execute_sql
+import pytest
+
+from src.agent.nodes.execute import _execute_with_timeout, execute_sql
 from src.connectors.base import DatabaseConnector
 
 
@@ -77,4 +82,86 @@ class TestSecurityGuardrail:
         connector.execute.side_effect = Exception("no such table: missing")
         result = execute_sql(state, _config(connector))
         assert "no such table: missing" in result["error"]
+        assert result["retry_count"] == 1
+
+
+class TestExecuteWithTimeout:
+    """Tests for the _execute_with_timeout helper."""
+
+    def test_fast_query_returns_result(self):
+        """A query completing well within the timeout returns normally."""
+        connector = _mock_connector(cols=["id"], rows=[(1,)])
+        cols, rows = _execute_with_timeout(connector, "SELECT 1", timeout=5.0)
+        assert cols == ["id"]
+        assert rows == [(1,)]
+
+    def test_slow_connector_raises_timeout_error(self):
+        """A connector that blocks longer than timeout raises TimeoutError."""
+        connector = MagicMock(spec=DatabaseConnector)
+        # No _conn attribute → no SQLite interrupt, uses threading fallback.
+        del connector._conn
+
+        def slow_execute(sql):
+            time.sleep(10)
+            return ([], [])
+
+        connector.execute.side_effect = slow_execute
+        with pytest.raises(TimeoutError):
+            _execute_with_timeout(connector, "SELECT 1", timeout=0.1)
+
+    def test_sqlite_interrupt_on_slow_query(self):
+        """SQLite Connection.interrupt() is called when the deadline is reached."""
+        # check_same_thread=False is required because the worker thread opens
+        # a cursor on a connection created in the test (main) thread.
+        conn = sqlite3.connect(":memory:", check_same_thread=False)
+        connector = MagicMock(spec=DatabaseConnector)
+        connector._conn = conn
+
+        interrupted = threading.Event()
+
+        def slow_execute(sql):
+            cur = conn.cursor()
+            # WITH RECURSIVE generates a huge result set; interrupt() will
+            # abort it before completion.
+            try:
+                cur.execute(
+                    "WITH RECURSIVE cnt(x) AS "
+                    "(SELECT 1 UNION ALL SELECT x+1 FROM cnt WHERE x < 100000000) "
+                    "SELECT x FROM cnt"
+                )
+                cur.fetchall()
+            except sqlite3.OperationalError as exc:
+                interrupted.set()
+                raise exc
+
+        connector.execute.side_effect = slow_execute
+
+        with pytest.raises(TimeoutError):
+            _execute_with_timeout(connector, "SELECT 1", timeout=0.5)
+
+        assert interrupted.is_set(), "interrupt() should have fired"
+        conn.close()
+
+    def test_timeout_error_propagated_by_execute_sql(self):
+        """execute_sql returns a timed-out error message when the query exceeds TIMEOUT_SECONDS."""
+        state = {"sql_query": "SELECT 1", "retry_count": 0}
+        connector = MagicMock(spec=DatabaseConnector)
+        del connector._conn
+
+        def slow_execute(sql):
+            time.sleep(10)
+            return ([], [])
+
+        connector.execute.side_effect = slow_execute
+
+        import src.agent.nodes.execute as execute_mod
+
+        original = execute_mod.TIMEOUT_SECONDS
+        execute_mod.TIMEOUT_SECONDS = 0.1
+        try:
+            result = execute_sql(state, _config(connector))
+        finally:
+            execute_mod.TIMEOUT_SECONDS = original
+
+        assert "timed out" in result["error"].lower()
         assert result["retry_count"] == 1

@@ -22,6 +22,8 @@ class PostgreSQLConnector(DatabaseConnector):
         self.user = user
         self.password = password
         self._conn: Optional[Any] = None
+        # When set, execute() issues SET statement_timeout before each query.
+        self.query_timeout_ms: Optional[int] = None
 
     def connect(self) -> Any:
         try:
@@ -41,9 +43,17 @@ class PostgreSQLConnector(DatabaseConnector):
         return self._conn
 
     def execute(self, query: str) -> Tuple[List[str], List[Tuple]]:
+        """Execute *query* and return (column_names, rows).
+
+        If ``query_timeout_ms`` is set, a ``SET statement_timeout`` command is
+        issued first so PostgreSQL aborts the query server-side if it exceeds
+        the deadline.
+        """
         if self._conn is None:
             self.connect()
         cursor = self._conn.cursor()
+        if self.query_timeout_ms is not None:
+            cursor.execute("SET statement_timeout = %s", (self.query_timeout_ms,))
         cursor.execute(query)
         column_names = [desc[0] for desc in cursor.description]
         rows = cursor.fetchmany(100)

@@ -22,6 +22,8 @@ class MySQLConnector(DatabaseConnector):
         self.user = user
         self.password = password
         self._conn = None
+        # When set, execute() issues SET SESSION max_execution_time before each query.
+        self.query_timeout_ms: int | None = None
 
     def connect(self) -> None:
         try:
@@ -40,9 +42,17 @@ class MySQLConnector(DatabaseConnector):
         )
 
     def execute(self, sql: str) -> Tuple[List[str], List[Tuple[Any, ...]]]:
+        """Execute *sql* and return (column_names, rows).
+
+        If ``query_timeout_ms`` is set, a ``SET SESSION max_execution_time``
+        command is issued first so MySQL aborts SELECT queries server-side if
+        they exceed the deadline (milliseconds, MySQL 5.7.8+).
+        """
         if self._conn is None:
             self.connect()
         cursor = self._conn.cursor()
+        if self.query_timeout_ms is not None:
+            cursor.execute(f"SET SESSION max_execution_time = {int(self.query_timeout_ms)}")
         cursor.execute(sql)
         rows = cursor.fetchmany(100)
         cols = [desc[0] for desc in cursor.description]

@@ -30,12 +30,13 @@ st.title("🧪 LLM Text-to-SQL Evaluation Dashboard")
 st.sidebar.header("⚙️ Experiment Settings")
 st.sidebar.markdown("Configure the ablation study parameters:")
 
-_PROVIDER_MODELS = {
-    "openai": ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"],
-    "anthropic": ["claude-3-5-haiku-20241022", "claude-sonnet-4-5"],
-    "gemini": ["gemini-2.0-flash", "gemini-2.5-pro"],
+from src.llm.factory import PROVIDER_MODELS, LLMProvider
+
+_PROVIDER_LABELS = {
+    "OpenAI": LLMProvider.OPENAI,
+    "Anthropic": LLMProvider.ANTHROPIC,
+    "Gemini": LLMProvider.GEMINI,
 }
-_PROVIDER_LABELS = {"OpenAI": "openai", "Anthropic": "anthropic", "Gemini": "gemini"}
 
 provider_label = st.sidebar.selectbox(
     "LLM Provider",
@@ -46,7 +47,7 @@ provider_choice = _PROVIDER_LABELS[provider_label]
 
 model_choice = st.sidebar.selectbox(
     "LLM Model",
-    options=_PROVIDER_MODELS[provider_choice],
+    options=PROVIDER_MODELS[provider_choice],
     help="Select the model used for SQL generation.",
 )
 
