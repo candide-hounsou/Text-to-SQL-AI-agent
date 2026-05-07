@@ -5,13 +5,19 @@ Thank you for your interest in contributing to the Olist Text-to-SQL Agent!
 ## Getting Started
 
 1. **Fork** the repository and clone your fork locally.
-2. **Create a virtual environment** and install dependencies:
+2. **Create a virtual environment** and install Poetry:
    ```bash
    python -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   pip install poetry
    ```
-3. **Set up environment variables** by copying the example file:
+3. **Install dependencies using Poetry**:
+   ```bash
+   poetry install
+   ```
+   > **Alternative:** If you prefer not to use Poetry, run `pip install -r requirements.txt` instead.
+
+4. **Set up environment variables** by copying the example file:
    ```bash
    cp .env.example .env
    # Edit .env and add your OPENAI_API_KEY

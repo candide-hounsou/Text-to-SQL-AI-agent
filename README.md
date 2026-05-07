@@ -126,12 +126,19 @@ python -m venv .venv
 source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
 ```
 
-**3. Install dependencies**
+**3. Install Poetry** (the project's package manager)
 ```bash
-pip install -r requirements.txt
+pip install poetry
 ```
 
-**4. Environment variables**
+**4. Install dependencies**
+```bash
+poetry install
+```
+
+> **Note:** If you prefer to use pip directly without Poetry, you can run `pip install -r requirements.txt` instead.
+
+**5. Environment variables**
 ```bash
 cp .env.example .env
 # Edit .env and set OPENAI_API_KEY (minimum)
@@ -141,7 +148,7 @@ cp .env.example .env
 # For MySQL:      pip install mysql-connector-python
 ```
 
-**5. Initialize the database**
+**6. Initialize the database**
 ```bash
 python scripts/build_db.py      # Build SQLite from Olist CSV files
 python scripts/build_schema.py  # Extract schema.txt + build RAG index

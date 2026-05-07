@@ -62,4 +62,5 @@
     { "id": 58, "difficulty": "ambiguous", "question": "Show me the top products.", "gold_sql": null },
     { "id": 59, "difficulty": "ambiguous", "question": "Quel est le profil type de nos clients ?", "gold_sql": null },
     { "id": 60, "difficulty": "ambiguous", "question": "Fais un bilan global des livraisons.", "gold_sql": null }
+    ,{ "id": 61, "difficulty": "no STDEV function in SQLite", "question": "What is the average time and standard variation time taken from order purchase to delivery for all orders in the database?", "gold_sql": null }
 ]

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Iterable
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
@@ -106,3 +106,18 @@ class TokenTracker(BaseCallbackHandler):
         self.completion_tokens = 0
         self.total_tokens = 0
         self.total_cost_usd = 0.0
+
+
+def get_configured_callbacks(config: Dict[str, Any]) -> list[Any]:
+    """Return callbacks attached to a LangGraph/LangChain runnable config."""
+    configurable = config.get("configurable", {}) if config else {}
+    callbacks: Any = configurable.get("callbacks") or config.get("callbacks", [])
+    if callbacks is None:
+        return []
+    if isinstance(callbacks, list):
+        return callbacks
+    if isinstance(callbacks, tuple):
+        return list(callbacks)
+    if isinstance(callbacks, Iterable):
+        return list(callbacks)
+    return [callbacks]

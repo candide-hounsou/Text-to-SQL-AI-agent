@@ -7,6 +7,9 @@ def build_database(db_path: str, data_dir: str):
     Reads multiple CSV files from the Olist E-commerce dataset and imports 
     them into a local SQLite database to enable complex SQL querying.
     """
+    # Ensure the data directory exists
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    
     # Establish connection to the SQLite database
     conn = sqlite3.connect(db_path)
     
