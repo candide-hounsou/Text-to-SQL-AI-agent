@@ -1,5 +1,4 @@
-# 🤖 Text-to-SQL multi-agent architecture evaluation (Forked from Adam FAIK's project (https://github.com/adamfaik/sql-agent) and modified for training purposes by me.
-Give credits to the originator !
+# 🤖 Text-to-SQL multi-agent architecture evaluation (Forked from Adam FAIK's project (https://github.com/adamfaik/sql-agent) and modified for training purposes.
 
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?logo=streamlit&logoColor=white)
@@ -67,7 +66,7 @@ graph TD
 ## 🗄️ The dataset
 The agent is tested against the [Brazilian e-commerce public dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce). This realistic dataset contains 100,000 anonymized orders from 2016 to 2018.
 - The database schema consists of 9 interconnected tables (orders, customers, products, reviews, etc.).
-- An in-depth **Exploratory Data Analysis (EDA)** and Entity-Relationship Diagram (ERD) can be found in the `notebooks/` directory to justify the architectural choices.
+- The modifications include now multi-database possibiliy.
 
 ## 🏗️ Project structure
 ```
@@ -99,7 +98,11 @@ cd sql-agent-fork-from-Adam-Faik-
 
 # 2. Configure API keys
 cp .env.example .env
-# Edit .env and add your OPENAI_API_KEY (and optionally ANTHROPIC_API_KEY / GOOGLE_API_KEY)
+# Edit .env and set OPENAI_API_KEY (minimum)
+# For Anthropic: ANTHROPIC_API_KEY  → pip install langchain-anthropic
+# For Google Gemini: GOOGLE_API_KEY → pip install langchain-google-genai
+# For PostgreSQL: pip install psycopg2-binary
+# For MySQL:      pip install mysql-connector-python
 
 # 3. Start the app
 docker compose up --build
@@ -179,9 +182,6 @@ pytest tests/
 | **CSV** | Sidebar → Upload SQLite / CSV → upload `.csv` file |
 | **PostgreSQL** | Sidebar → Connection String → fill host/port/user/password |
 | **MySQL** | Sidebar → Connection String → fill host/port/user/password |
-
-## 🔬 Key findings
-Through rigorous ablation studies, this project demonstrates that while self-correction significantly reduces syntax errors (SQLite exceptions), complex relational joins still require robust schema linking and few-shot examples to prevent semantic hallucinations.
 
 ---
 *Developed for academic training purposes.*
