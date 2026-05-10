@@ -7,7 +7,7 @@
 ![CI](https://github.com/candide-hounsou/sql-agent-fork-from-Adam-Faik-/actions/workflows/ci.yml/badge.svg)
 
 ## 📌 Project overview
-This repository contains the source code and experimental framework for evaluating multi-agent architectures in text-to-SQL tasks. It was developed as part of a final thesis project.
+This repository contains the source code and experimental framework for evaluating multi-agent architectures in text-to-SQL tasks.
 
 The core objective is to evaluate how advanced prompt engineering techniques—specifically **few-shot learning**, **chain of thought (CoT)**, and **self-correction**—impact the performance and reliability of an LLM (powered by multiple providers and `LangGraph`) when querying a complex, real-world relational database.
 
